@@ -5,6 +5,8 @@ const pluginPath = path.join(path.dirname(__dirname));
 const urlParams = new URLSearchParams(window.location.search);
 const recievedPath = urlParams.get('path');
 
+let copyMode = true;
+
 function createBuiltinBadges(eagle) {
     return [
         createShellBadge(eagle),
@@ -71,18 +73,25 @@ document.addEventListener('click', (e) => {
 });
 
 function createOpenFolderBadge(eagle) {
-    const dirPath = path.dirname(recievedPath);
+    const dirPath = path.join(path.dirname(recievedPath), 'extendedFiles');
     return `
         <div class="badge builtin-badge" 
              onclick="eagle.shell.openPath('${dirPath.replace(/\\/g, '\\\\')}')">
-            📁 Open Folder
+            📁 Open Extended Files
         </div>
     `;
 }
 
 async function getPropsBadges(eagle) {
     const dirPath = path.dirname(recievedPath);
-    const files = fs.readdirSync(dirPath)
+    const extendedFilesPath = path.join(dirPath, 'extendedFiles');
+    
+    // Create directory if missing
+    if (!fs.existsSync(extendedFilesPath)) {
+        fs.mkdirSync(extendedFilesPath, { recursive: true });
+    }
+
+    const files = fs.readdirSync(extendedFilesPath)
         .filter(file => {
             // Ignore hidden files and specific excluded files
             const excluded = [
@@ -113,7 +122,7 @@ async function getPropsBadges(eagle) {
     // Generate badge HTML
     const badges = [
         ...createBuiltinBadges(eagle),
-        ...files.map(file => createBadge(file, null, path.join(dirPath, file))),
+        ...files.map(file => createBadge(file, null, path.join(dirPath, 'extendedFiles', file))),
         ...Object.entries(itemProps).map(([key, value]) => createBadge(key, value))
     ];
 
@@ -126,17 +135,29 @@ async function getPropsBadges(eagle) {
                 <button class="control-btn" onclick="location.reload()">
                     🔄
                 </button>
+                <button class="control-btn" id="copy-move-toggle">
+                    ${copyMode ? '📋 Copy Mode' : '✂️ Move Mode'}
+                </button>
             </div>
             <input type="range" class="size-slider" 
                    min="12" max="24" value="${itemProps.config_slider_value || 14}" 
                    step="1" aria-label="Badge size">
         </div>
-        <div class="badge-container">${badges.join('')}</div>
+        <div class="badge-container" data-mode="${copyMode ? 'copy' : 'move'}">
+            ${badges.join('')}
+        </div>
     `;
 }
 
 function createBadge(name, value = null, filePath = null, isNew = false) {
-    const escapedPath = filePath ? filePath.replace(/\\/g, '\\\\').replace(/'/g, "\\'") : '';
+    const dirPath = path.dirname(recievedPath);
+    const fullPath = filePath ? 
+        path.join(dirPath, 'extendedFiles', path.basename(filePath)) : 
+        null;
+    
+    const escapedPath = fullPath ? 
+        fullPath.replace(/\\/g, '\\\\').replace(/'/g, "\\'") : 
+        '';
     const onClick = filePath ? `onclick="eagle.shell.openPath('${escapedPath}')"` : '';
     const colorClass = `badge-color-${Math.floor(Math.random() * 6) + 1}`;
     
@@ -178,6 +199,7 @@ async function toggleConfigKeys() {
     // Refresh badges without full reinit
     document.body.innerHTML = await getPropsBadges(eagle);
     initializeSlider();
+    initDragDrop();
 }
 
 // Extract slider logic to separate function
@@ -196,6 +218,49 @@ function initializeSlider() {
     });
 }
 
+function initDragDrop() {
+    const container = document.querySelector('.badge-container');
+    
+    container.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        container.classList.add('dragover');
+    });
+
+    container.addEventListener('dragleave', (e) => {
+        container.classList.remove('dragover');
+    });
+
+    container.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        container.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        const dirPath = path.dirname(recievedPath);
+        
+        for (let file of files) {
+            const filePath = file.path;
+            const fileName = path.basename(filePath);
+            const destPath = path.join(dirPath, 'extendedFiles', fileName);
+            
+            try {
+                if (copyMode) {
+                    fs.copyFileSync(filePath, destPath);
+                } else {
+                    fs.renameSync(filePath, destPath);
+                }
+            } catch (error) {
+                console.error('File operation failed:', error);
+                eagle.dialog.showErrorBox('Operation Failed', `Couldn't ${copyMode ? 'copy' : 'move'} ${fileName}`);
+            }
+        }
+        
+        // Refresh badges
+        document.body.innerHTML = await getPropsBadges(eagle);
+        initializeSlider();
+        initDragDrop();
+    });
+}
+
 eagle.onPluginCreate(async () => {
     console.log("eagle.onPluginCreate");
 });
@@ -204,6 +269,7 @@ eagle.onPluginRun(async () => {
     console.log("eagle.onPluginRun");
     document.body.innerHTML = await getPropsBadges(eagle);
     initializeSlider();
+    initDragDrop();
     const { ItemProp } = require(path.join(pluginPath, 'utils', 'itemProp.js'));
     const itemProp = new ItemProp({ filePath: recievedPath });
     
@@ -266,16 +332,17 @@ eagle.onPluginRun(async () => {
                 click: async () => {
                     const filePath = selectedBadge.dataset.filePath;
                     if (isFileBadge && filePath) {
+                        const fullPath = path.join(path.dirname(recievedPath), 'extendedFiles', path.basename(filePath));
                         const { response } = await eagle.dialog.showMessageBox({
                             type: 'question',
                             buttons: ['Cancel', 'Delete'],
                             title: 'Confirm Deletion',
                             message: 'Are you sure you want to delete this file?',
-                            detail: `Path: ${filePath}`
+                            detail: `Path: ${fullPath}`
                         });
 
                         if (response === 1) {
-                            fs.unlinkSync(filePath);
+                            fs.unlinkSync(fullPath);
                             const itemProp = new ItemProp({ filePath });
                             await itemProp.delete(path.basename(filePath));
                             document.body.innerHTML = await getPropsBadges(eagle);
@@ -345,6 +412,15 @@ eagle.onPluginRun(async () => {
             const key = badge.querySelector('.badge-key').textContent;
             const value = badge.querySelector('.badge-value').textContent;
             badge.outerHTML = createBadge(key, value, null, true);
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (e.target.id === 'copy-move-toggle') {
+            copyMode = !copyMode;
+            e.target.textContent = copyMode ? '📋 Copy Mode' : '✂️ Move Mode';
+            const container = document.querySelector('.badge-container');
+            container.dataset.mode = copyMode ? 'copy' : 'move';
         }
     });
 

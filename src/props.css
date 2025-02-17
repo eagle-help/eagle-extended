@@ -245,4 +245,39 @@ body {
     white-space: nowrap;
     pointer-events: none;
     z-index: 1000;
+}
+
+/* Update drag-drop styling */
+.badge-container[data-mode].dragover {
+    outline: 2px dashed !important;
+    outline-offset: -2px;
+}
+
+.badge-container[data-mode="copy"].dragover {
+    outline-color: #007aff;
+    background: rgba(0, 122, 255, 0.05);
+}
+
+.badge-container[data-mode="move"].dragover {
+    outline-color: #34d399;
+    background: rgba(52, 211, 153, 0.05);
+}
+
+.badge-container.dragover::after {
+    content: "Drop to " attr(data-mode) " here";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5em;
+    font-weight: 600;
+    color: white !important;
+    background: rgba(0,0,0,0.8);
+    padding: 8px 16px;
+    border-radius: 8px;
+    opacity: 0.95;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    pointer-events: none;
+    z-index: 1000;
 } 
