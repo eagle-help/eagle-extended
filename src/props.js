@@ -21,23 +21,52 @@ function createShellBadge(eagle) {
     `;
 }
 
+function which(command) {
+    try {
+        const { execSync } = require('child_process');
+        const checkCommand = eagle.app.isWindows 
+            ? `where ${command}` 
+            : `command -v ${command}`;
+        
+        const path = execSync(checkCommand, { 
+            encoding: 'utf-8',
+            stdio: ['ignore', 'pipe', 'ignore'] 
+        }).trim();
+
+        console.log(`Found ${command} at:`, path);
+        return path.split('\n')[0]; // Return first match
+    } catch (e) {
+        console.warn(`${command} not found:`, e.message);
+        return null;
+    }
+}
+
 document.addEventListener('click', (e) => {
     if (e.target.id === 'open-shell-badge') {
-        const dirPath = path.dirname(recievedPath);
+        const path = require('path');
         const { spawn } = require('child_process');
+        const dirPath = path.dirname(recievedPath);
         
-        if (eagle.app.isWindows) {
-            spawn('cmd.exe', ['/K', `cd /d "${dirPath}"`], { 
-                shell: true,
-                detached: true,
-                stdio: 'ignore'
-            });
-        } else {
-            spawn('bash', ['-c', `cd "${dirPath}" && exec bash`], {
-                detached: true,
-                stdio: 'ignore'
-            });
+        // Check for pwsh with proper casing
+        const shellPath = which('pwsh') || which('Powershell') ||
+                        which('powershell') || 
+                        (eagle.app.isWindows ? 'cmd.exe' : 'bash');
+
+        console.log('Selected shell:', shellPath);
+
+        let shellArgs = ['-NoExit', '-Command', `Set-Location -Path '${dirPath}'`];
+        
+        if (shellPath === 'cmd.exe') {
+            shellArgs = ['/K', `cd /d "${dirPath}"`];
+        } else if (shellPath === 'bash') {
+            shellArgs = ['-c', `cd "${dirPath}" && exec bash`];
         }
+
+        spawn(shellPath, shellArgs, {
+            shell: true,
+            detached: true,
+            stdio: 'ignore'
+        });
     }
 });
 
@@ -67,10 +96,12 @@ async function getPropsBadges(eagle) {
     const { ItemProp } = require(path.join(pluginPath, 'utils', 'itemProp.js'));
     const itemProp = new ItemProp({ filePath: recievedPath });
     let itemProps = {};
+    
+    const showConfigKeys = await itemProp.getLocal('config_show_system_keys') || false;
+
     try {
         for await (const [key, value] of itemProp.iterLocal()) {
-            // if not key start with config_
-            if (key.startsWith('config_')) {
+            if (!showConfigKeys && key.startsWith('config_')) {
                 continue;
             }
             itemProps[key] = value;
@@ -88,8 +119,16 @@ async function getPropsBadges(eagle) {
 
     return `
         <div class="controls">
+            <div class="controls-group">
+                <button class="control-btn" onclick="toggleConfigKeys()">
+                    ${showConfigKeys ? '🔒' : '🔓'}
+                </button>
+                <button class="control-btn" onclick="location.reload()">
+                    🔄
+                </button>
+            </div>
             <input type="range" class="size-slider" 
-                   min="12" max="24" value="${itemProp.getLocal('config_slider_value') || 14}" 
+                   min="12" max="24" value="${itemProps.config_slider_value || 14}" 
                    step="1" aria-label="Badge size">
         </div>
         <div class="badge-container">${badges.join('')}</div>
@@ -130,6 +169,32 @@ function createBadge(name, value = null, filePath = null, isNew = false) {
     `;
 }
 
+async function toggleConfigKeys() {
+    const { ItemProp } = require(path.join(pluginPath, 'utils', 'itemProp.js'));
+    const itemProp = new ItemProp({ filePath: recievedPath });
+    const currentValue = await itemProp.getLocal('config_show_system_keys') || false;
+    await itemProp.setLocal('config_show_system_keys', !currentValue);
+    
+    // Refresh badges without full reinit
+    document.body.innerHTML = await getPropsBadges(eagle);
+    initializeSlider();
+}
+
+// Extract slider logic to separate function
+function initializeSlider() {
+    const { ItemProp } = require(path.join(pluginPath, 'utils', 'itemProp.js'));
+    const itemProp = new ItemProp({ filePath: recievedPath });
+    
+    const slider = document.querySelector('.size-slider');
+    if (!slider) return;
+
+    slider.addEventListener('input', async (e) => {
+        const size = e.target.value;
+        document.documentElement.style.setProperty('--badge-font-size', `${size}px`);
+        document.documentElement.style.setProperty('--badge-height', `${size * 2}px`);
+        await itemProp.setLocal('config_slider_value', size);
+    });
+}
 
 eagle.onPluginCreate(async () => {
     console.log("eagle.onPluginCreate");
@@ -138,6 +203,7 @@ eagle.onPluginCreate(async () => {
 eagle.onPluginRun(async () => {
     console.log("eagle.onPluginRun");
     document.body.innerHTML = await getPropsBadges(eagle);
+    initializeSlider();
     const { ItemProp } = require(path.join(pluginPath, 'utils', 'itemProp.js'));
     const itemProp = new ItemProp({ filePath: recievedPath });
     
@@ -181,7 +247,7 @@ eagle.onPluginRun(async () => {
             console.log("sliderDistance", sliderDistance);
         }
 
-        if (!(badgeDistance <= 10 || sliderDistance <= 260)) {
+        if (!(badgeDistance <= 120 || sliderDistance <= 260)) {
             console.log("not triggering", badgeDistance, sliderDistance);
             return;
         }
@@ -281,6 +347,8 @@ eagle.onPluginRun(async () => {
             badge.outerHTML = createBadge(key, value, null, true);
         }
     });
+
+    return document.body.innerHTML;
 });
 
 

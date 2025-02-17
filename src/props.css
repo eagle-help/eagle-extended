@@ -47,7 +47,7 @@ body {
 .badge {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
     font-size: var(--badge-font-size);
-    height: var(--badge-height);
+    height: auto;
     padding: 0 4px;
     border-radius: calc(var(--badge-height) / 2);
     line-height: 1.2;
@@ -75,19 +75,29 @@ body {
     border: none !important;
     padding: 0;
     overflow: hidden;
+    display: flex !important;
+    width: 100%;
+    min-width: 100%;
+    height: var(--badge-height);
 }
 
 .badge-key {
+    flex: 1 1 auto;
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
     background: rgba(0,0,0,0.08);
     padding: 0 10px;
     border-radius: 14px 0 0 14px;
     border-right: 1px solid rgba(0,0,0,0.1);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    height: var(--badge-height);
+    line-height: var(--badge-height);
 }
 
 .badge-value {
+    flex: 1 0 auto;
+    min-width: 120px;
     background: rgba(255,255,255,0.9);
     padding: 0 10px;
     border-radius: 0 14px 14px 0;
@@ -96,6 +106,8 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    height: var(--badge-height);
+    line-height: var(--badge-height);
 }
 
 /* Color variations - using Tailwind-inspired palette */
@@ -116,14 +128,38 @@ body {
 
 /* Slider styles */
 .controls {
-    padding: 0 12px 12px;
-    max-width: 1200px;
-    margin: 0 auto;
+    display: flex;
+    gap: 12px;
+    padding: 8px;
+    align-items: center;
+    border-bottom: 1px solid;
 }
 
-.width-slider {
-    width: 200px;
-    margin: 0;
+.controls-group {
+    display: flex;
+    gap: 4px;
+}
+
+.control-btn {
+    border-radius: 8px;
+    padding: 6px 10px;
+    border: 1px solid;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.control-btn:hover {
+    transform: translateY(-1px);
+}
+
+.control-btn:active {
+    transform: translateY(0);
+}
+
+.size-slider {
+    flex: 1;
+    max-width: 200px;
+    margin: 0 12px;
 }
 
 /* Hover effects */
