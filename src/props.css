@@ -1,0 +1,163 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+:root {
+    --badge-font-size: 14px;
+    --badge-height: 28px;
+}
+
+.badge-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2px;
+    grid-auto-rows: min-content;
+    max-width: none !important;
+    margin: 0 auto;
+    width: 100%;
+    justify-content: stretch;
+    align-items: start;
+}
+
+/* For smaller screens */
+@media (max-width: 1000px) {
+    .badge-container {
+        max-width: none !important;
+        padding: 4px 8px;
+    }
+}
+
+@media (max-width: 700px) {
+    .badge-container {
+        max-width: 100%;
+        grid-template-columns: 1fr;
+    }
+}
+
+.badge {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: var(--badge-font-size);
+    height: var(--badge-height);
+    padding: 0 4px;
+    border-radius: calc(var(--badge-height) / 2);
+    line-height: 1.2;
+    display: flex;
+    align-items: center;
+    cursor: default;
+    min-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    white-space: nowrap;
+    border: 0.5px solid transparent;
+    transition: all 0.2s ease;
+    justify-content: flex-start;
+    min-height: var(--badge-height);
+}
+
+.file-badge {
+    border-color: rgba(0,0,0,0.1);
+    background: #f8f9fa;
+    cursor: pointer;
+}
+
+.key-value-badge {
+    background: transparent !important;
+    border: none !important;
+    padding: 0;
+    overflow: hidden;
+}
+
+.badge-key {
+    background: rgba(0,0,0,0.08);
+    padding: 0 10px;
+    border-radius: 14px 0 0 14px;
+    border-right: 1px solid rgba(0,0,0,0.1);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.badge-value {
+    background: rgba(255,255,255,0.9);
+    padding: 0 10px;
+    border-radius: 0 14px 14px 0;
+    margin-left: 0;
+    border-left: 1px solid rgba(0,0,0,0.05);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Color variations - using Tailwind-inspired palette */
+.badge-color-1 { background: #f0f4ff; color: #1d4ed8; }
+.badge-color-2 { background: #fef2f2; color: #b91c1c; }
+.badge-color-3 { background: #f0fdf4; color: #15803d; }
+.badge-color-4 { background: #fff7ed; color: #c2410c; }
+.badge-color-5 { background: #faf5ff; color: #6b21a8; }
+.badge-color-6 { background: #f0f9ff; color: #0369a1; }
+
+/* Update color variations to style keys only */
+.badge-color-1 .badge-key { background: #dbeafe; color: #1d4ed8; }
+.badge-color-2 .badge-key { background: #fee2e2; color: #b91c1c; }
+.badge-color-3 .badge-key { background: #dcfce7; color: #15803d; }
+.badge-color-4 .badge-key { background: #ffedd5; color: #c2410c; }
+.badge-color-5 .badge-key { background: #f3e8ff; color: #6b21a8; }
+.badge-color-6 .badge-key { background: #e0f2fe; color: #0369a1; }
+
+/* Slider styles */
+.controls {
+    padding: 0 12px 12px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.width-slider {
+    width: 200px;
+    margin: 0;
+}
+
+/* Hover effects */
+.key-value-badge:hover .badge-key {
+    border: 2px solid rgba(0,0,0,0.05);
+}
+
+.key-value-badge:hover .badge-value {
+    border: 2px solid rgba(0,0,0,0.02);
+}
+
+/* Add after existing .badge styles */
+.builtin-badge {
+    background: #e9ecef !important;
+    color: #495057 !important;
+    border: 1px solid #dee2e6 !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.builtin-badge:hover {
+    background: #dee2e6 !important;
+    transform: translateY(-1px);
+}
+
+.builtin-badge:active {
+    background: #ced4da !important;
+    transform: translateY(0);
+}
+
+/* Update existing color classes to exclude builtin badges */
+.badge:not(.builtin-badge).badge-color-1 { background: #f0f4ff; color: #1d4ed8; }
+.badge:not(.builtin-badge).badge-color-2 { background: #fef2f2; color: #b91c1c; }
+.badge:not(.builtin-badge).badge-color-3 { background: #f0fdf4; color: #15803d; }
+.badge:not(.builtin-badge).badge-color-4 { background: #fff7ed; color: #c2410c; }
+.badge:not(.builtin-badge).badge-color-5 { background: #faf5ff; color: #6b21a8; }
+.badge:not(.builtin-badge).badge-color-6 { background: #f0f9ff; color: #0369a1; } 

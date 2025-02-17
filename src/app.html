@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <script src="entity.js"></script>
+  </head>
+  <body>
+  </body>
+  <script>
+    let isReady = false;
+
+    eagle.onPluginCreate(async () => {
+        console.log("eagle.onPluginCreate");
+        isReady = true;
+    });
+
+    eagle.onPluginRun(async () => {
+        if(!isReady){
+            return;
+        }
+
+        console.log("eagle.onPluginRun");
+
+        const itemsSelected  = await eagle.item.getSelected();
+        if (itemsSelected.length == 1){
+            await convertItemToEntity(itemsSelected[0]);
+            window.close();
+        }
+        if (itemsSelected.length == 0){
+            await createEmptyEntity();
+            window.close();
+        }
+
+        await eagle.dialog.showMessageBox({
+            title: "Error",
+            message: "Please select only one item or deselect all items",
+            buttons: ["OK"]
+        });
+    });
+  </script>
+</html>
