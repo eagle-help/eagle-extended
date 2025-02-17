@@ -148,12 +148,12 @@ function createBadge(name, value = null, filePath = null, isNew = false) {
                        class="badge-key-edit" 
                        placeholder="Key" 
                        value="${name}"
-                       style="...">
+                       style="height: var(--badge-height); padding: 0 12px;">
                 <input type="text" 
                        class="badge-value-edit" 
                        placeholder="Value" 
                        value="${value || ''}"
-                       style="...">
+                       style="height: var(--badge-height); padding: 0 12px;">
             </div>
         `;
     }
@@ -163,8 +163,8 @@ function createBadge(name, value = null, filePath = null, isNew = false) {
         <div class="badge ${colorClass} ${value ? 'key-value-badge' : 'file-badge'}" 
              ${onClick}
              ${filePath ? `data-file-path="${escapedPath}"` : ''}>
-            <span class="badge-key">${name}</span>
-            ${value ? `<span class="badge-value">${value}</span>` : ''}
+            <span class="badge-key" data-tooltip="${name}">${name}</span>
+            ${value ? `<span class="badge-value" data-tooltip="${value}">${value}</span>` : ''}
         </div>
     `;
 }
