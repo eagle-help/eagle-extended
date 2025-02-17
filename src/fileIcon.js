@@ -1,31 +1,22 @@
 const fs = require('fs');
+const path = require('path');
 
 module.exports = async ({ src, dest, item }) => {
     return new Promise(async (resolve, reject) => {
         try {
-            const iconPath = path.join(eagle.plugin.path, "assets", "fileIcon.png");
-            // load image file
-            const image = new Image();
-            image.src = iconPath;
-
-            // copy the icon to the dest
+            const iconPath = path.join(path.dirname(__dirname), "assets", "fileIcon.png");
+            
+            // Directly copy the pre-made icon file
             fs.copyFileSync(iconPath, dest);
 
-            // get size
-            const size = {
-                height: image.height,
-                width: image.width
-            };
-
-            if (!fs.existsSync(dest)) {
-                return reject(new Error(`icns file load fail.`));
-            }
-            item.height = size?.height || item.height;
-            item.width = size?.width || item.width;
+            // Set fixed dimensions for the known icon size
+            item.height = 512; 
+            item.width = 512;
 
             return resolve(item);
         }
         catch (err) {
+            alert(err);
             return reject(err);
         }
     });
