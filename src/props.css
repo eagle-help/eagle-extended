@@ -281,3 +281,16 @@ body {
     pointer-events: none;
     z-index: 1000;
 } 
+
+.badge-edit {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    margin-right: 5px;
+    padding: 0 3px;
+}
+
+.badge-edit:hover {
+    color: #333;
+}
