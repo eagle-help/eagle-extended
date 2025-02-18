@@ -1,37 +1,40 @@
-const { JsonCache } = require('./base');
 const path = require('path');
 const fs = require('fs');
+
+function _getRecursTree(p, ignores = ["^\\..*", "pyenv", "pyvenv", "node_modules", ".git"]){
+    const arr = [];
+    for (const file of fs.readdirSync(p, {recursive: true, withFileTypes: true})){
+        const fullPath = path.join(p, file.name);
+
+        if (ignores.some(ignore => fullPath.match(new RegExp(ignore)))){
+            continue;
+        }
+        if (file.isDirectory()){
+            const subArr = _getRecursTree(fullPath);
+            for (const sub of subArr){
+                arr.push(sub);
+            }
+        } else {
+            arr.push(fullPath);
+        }
+    }
+    return arr.sort((a, b) => a.length - b.length);
+}
+const localBasePath = path.dirname(__dirname)
+const locallyMapped = _getRecursTree(localBasePath);
 
 function importUtil(name){
     if (!name.endsWith('.js')){
         name += '.js';
     }
 
-    if (fs.existsSync(path.join(path.dirname(eagle.plugin.path), 'utils', name))){
-        return require(path.join(path.dirname(eagle.plugin.path), 'utils', name));
-    } else if (fs.existsSync(path.join(eagle.plugin.path, 'utils', name))){
-        return require(path.join(eagle.plugin.path, 'utils', name));
-    } else {
-        throw new Error(`${name} not found`);
-    }
-}
+    const utilsPath = path.join(localBasePath, 'utils', name);
 
-function _getRecursTree(p, ignores = ["^\\..*", "pyenv", "pyvenv"]){
-    const arr = [];
-    for (const file of fs.readdirSync(p, {recursive: true, withFileTypes: true})){
-        if (ignores.some(ignore => file.name.match(new RegExp(ignore)))){
-            continue;
-        }
-        if (file.isDirectory()){
-            const subArr = _getRecursTree(path.join(p, file.name));
-            for (const sub of subArr){
-                arr.push(path.join(file.name, sub));
-            }
-        } else {
-            arr.push(file.name);
-        }
+    if (fs.existsSync(utilsPath)){
+        return require(utilsPath);
+    } else {
+        throw new Error(`${name} not found in ${localBasePath}`);
     }
-    return arr.sort((a, b) => a.length - b.length);
 }
 
 function importPath(filePath) {
@@ -39,25 +42,19 @@ function importPath(filePath) {
         filePath += '.js';
     }
     filePath = filePath.split('/').join(path.sep);
-
-    let pluginPath = path.dirname(eagle.plugin.path);
-    let files = _getRecursTree(pluginPath);
-    console.log(files);
     let matchedFile;
-    for (const file of files){
+    for (const file of locallyMapped){
         if (file.includes(filePath)){
             matchedFile = file;
             break;
         }
     }
-
     if (matchedFile) {
-        return require(path.join(pluginPath, matchedFile));
+        return require(matchedFile);
     } else {
-        throw new Error(`${filePath} not found in ${pluginPath}`);
+        throw new Error(`${filePath} not found in ${eagle.plugin.path}`);
     }
 }
-
 function _roamingPath() { 
 	let roamingPath;
 	if (eagle.app.isWindows) {
@@ -71,45 +68,7 @@ function _roamingPath() {
 }
 const roamingPath = _roamingPath();
 
-class PluginConfig {
-    static _settingsCache = null;
-
-    static _path = null;
-
-
-    static get path() {
-        if (!PluginConfig._path) {
-            PluginConfig._path = path.join(roamingPath, 'pluginConfig.json');
-            console.log("Plugin config path: ", PluginConfig._path);
-        }
-        return PluginConfig._path;
-
-    }
-
-    static get() {
-        if (!PluginConfig._settingsCache) {
-            PluginConfig._settingsCache = new JsonCache(PluginConfig.path, true);
-        }
-        return PluginConfig._settingsCache.data;
-    }
-
-    static set(key, value) {
-        PluginConfig._settingsCache.set(key, value);
-        PluginConfig._settingsCache.save();
-    }
-
-    static set_default(key, defaultValue) {
-        PluginConfig._settingsCache.set_default(key, defaultValue);
-        PluginConfig._settingsCache.save();
-    }
-
-    static save() {
-        PluginConfig._settingsCache.save();
-    }
-}
-
 module.exports = {
-    PluginConfig,
     roamingPath,
     importUtil,
     importPath
