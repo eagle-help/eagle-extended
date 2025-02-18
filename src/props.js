@@ -730,8 +730,10 @@ document.addEventListener("click", async (e) => {
     const editButton = e.target.closest(".badge-edit");
     if (editButton) {
         e.stopPropagation();
-        console.log("editButton", editButton.dataset.sourcePath);
-        await eagle.shell.openPath(editButton.dataset.sourcePath);
+        const badgeElement = editButton.closest('[id^="customBadge-"]');
+        const sourcePath = badgeElement.dataset.sourcePath;
+        console.log("editButton", sourcePath);
+        await eagle.shell.openPath(sourcePath);
         return;
     }
 
