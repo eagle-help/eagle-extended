@@ -268,6 +268,10 @@ async function getPropsBadges(eagle) {
                 <button class="control-btn" id="copy-move-toggle">
                     ${copyMode ? "📋 Copy Mode" : "✂️ Move Mode"}
                 </button>
+                <button class="control-btn" 
+                        onclick="eagle.shell.openPath('${customBadgeManager.customBadgesPath.replace(/\\/g, "\\\\")}')">
+                    📂 Custom
+                </button>
             </div>
             <input type="range" class="size-slider" 
                    min="12" max="24" value="${
