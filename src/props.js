@@ -182,7 +182,7 @@ class FileBadge extends BaseBadge {
     render() {
         const badge = document.createElement("div");
         badge.className = `badge ${this.colorClass} file-badge`;
-        badge.dataset.filePath = this.escapedPath;
+        badge.dataset.filePath = this.filePath;
 
         const keySpan = document.createElement("span");
         keySpan.className = "badge-key";
@@ -190,10 +190,6 @@ class FileBadge extends BaseBadge {
         keySpan.dataset.tooltip = this.fileName;
 
         badge.appendChild(keySpan);
-
-        badge.addEventListener("click", () => {
-            eagle.shell.openPath(this.escapedPath);
-        });
 
         return badge;
     }
@@ -616,6 +612,15 @@ eagle.onPluginRun(async () => {
             e.target.textContent = copyMode ? "📋 Copy Mode" : "✂️ Move Mode";
             const container = document.querySelector(".badge-container");
             container.dataset.mode = copyMode ? "copy" : "move";
+        }
+    });
+
+    // Add file badge click handler
+    document.addEventListener('click', (event) => {
+        const fileBadge = event.target.closest('.file-badge');
+        if (fileBadge) {
+            const filePath = fileBadge.dataset.filePath;
+            eagle.shell.openPath(filePath);
         }
     });
 });
