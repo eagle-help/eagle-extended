@@ -756,8 +756,13 @@ document.addEventListener("click", async (e) => {
     const sourcePath = badgeElement.dataset.sourcePath;
     try {
         const badgeModule = require(sourcePath);
-
+        
         if (!badgeModule.onclick) return;
+
+        // Add initial execution log
+        console.log(`[Custom Badge] Executing script: ${path.basename(sourcePath)}`);
+        console.log(`[Custom Badge] Type: ${badgeModule.badge_onclick_type}`);
+        console.log(`[Custom Badge] Path: ${sourcePath}`);
 
         switch (badgeModule.badge_onclick_type) {
             case "js":
@@ -768,6 +773,7 @@ document.addEventListener("click", async (e) => {
                     dirPath: path.dirname(recievedPath),
                     sourcePath,
                 });
+                window.location.reload();
                 break;
 
             case "shell":
@@ -775,36 +781,71 @@ document.addEventListener("click", async (e) => {
                     typeof badgeModule.onclick === "string"
                         ? badgeModule.onclick
                         : await badgeModule.onclick({
-                              dirPath: path.dirname(recievedPath),
-                              sourcePath,
-                          });
+                            dirPath: path.dirname(recievedPath),
+                            sourcePath,
+                        });
 
-                // Replace with child_process execution
                 const { spawn } = require("child_process");
-                const parsedCommand = eval(`\`${command}\``); // Replace template variables
+                const parsedCommand = eval(`\`${command}\``);
+                
+                console.log("[Custom Badge] Executing shell command:", parsedCommand);
+                
+                // Create promise to wrap process execution
+                const executionPromise = new Promise((resolve, reject) => {
+                    const shellProcess = spawn(parsedCommand, {
+                        shell: true,
+                        cwd: path.join(path.dirname(recievedPath), "extendedFiles"),
+                        stdio: 'pipe'
+                    });
 
-                console.log("Executing shell command:", parsedCommand);
+                    let stdout = '';
+                    let stderr = '';
 
-                const shellProcess = spawn(parsedCommand, {
-                    shell: true,
-                    cwd: path.join(path.dirname(recievedPath), "extendedFiles"),
-                    detached: true,
-                    stdio: "ignore",
+                    shellProcess.stdout.on('data', (data) => {
+                        stdout += data.toString();
+                        console.log(`[Command Output] ${data}`);
+                    });
+
+                    shellProcess.stderr.on('data', (data) => {
+                        stderr += data.toString();
+                        console.error(`[Command Error] ${data}`);
+                    });
+
+                    shellProcess.on('close', (code) => {
+                        const status = code === 0 ? 'success' : 'failure';
+                        console.log(`[Custom Badge] Process exited with code ${code} (${status})`);
+                        console.log(`[Command STDOUT] ${stdout}`);
+                        console.log(`[Command STDERR] ${stderr}`);
+
+                        if (code === 0) {
+                            resolve();
+                        } else {
+                            reject(new Error(`Command failed with code ${code}\n${stderr}`));
+                        }
+                    });
                 });
-                shellProcess.on("error", (error) => {
-                    console.error("Command execution failed:", error);
+
+                try {
+                    // Wait for command to complete
+                    await executionPromise;
+                    
+                    // Only show success dialog after successful completion
+                    eagle.dialog.showMessageBox({
+                        type: "info",
+                        message: "Command completed successfully",
+                        detail: `Output directory: ${path.join(path.dirname(recievedPath), "extendedFiles")}`
+                    });
+                } catch (error) {
+                    console.error("[Custom Badge] Execution failed:", error);
                     eagle.dialog.showMessageBox({
                         type: "error",
                         message: "Command execution failed",
                         detail: error.message,
                     });
-                });
-
-                shellProcess.on("exit", (code) => {
-                    if (code !== 0) {
-                        console.error(`Command exited with code ${code}`);
-                    }
-                });
+                } finally {
+                    // Refresh after command completes (success or failure)
+                    window.location.reload();
+                }
                 break;
             default:
                 console.warn(
@@ -815,7 +856,4 @@ document.addEventListener("click", async (e) => {
     } catch (error) {
         console.error("Error handling custom badge click:", error);
     }
-
-    // refresh badges
-    window.location.reload();
 });
