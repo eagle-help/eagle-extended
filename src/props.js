@@ -72,7 +72,7 @@ document.addEventListener("click", (e) => {
     if (e.target.id === "open-shell-badge") {
         const path = require("path");
         const { spawn } = require("child_process");
-        const dirPath = path.dirname(recievedPath);
+        const dirPath = path.join(path.dirname(recievedPath), "extendedFiles");
 
         // Check for pwsh with proper casing
         const shellPath =
